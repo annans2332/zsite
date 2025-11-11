@@ -3,23 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Chat</title>
+<title>Firebase Chat</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Mini Front-End Chat</h2>
+<h2>Firebase Chat App</h2>
 
-<div id="login">
-  <input type="text" id="username" placeholder="Enter your name">
+<div id="auth">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="signup()">Sign Up</button>
   <button onclick="login()">Login</button>
 </div>
 
 <div id="app" style="display:none;">
   <h3>Welcome <span id="userDisplay"></span></h3>
+  
+  <input type="email" id="friendEmail" placeholder="Friend's Email">
+  <button onclick="sendFriendRequest()">Send Friend Request</button>
 
-  <input type="text" id="friendName" placeholder="Friend Name">
-  <button onclick="addFriend()">Add Friend</button>
+  <h4>Friends:</h4>
   <select id="friendsList" onchange="selectFriend()">
     <option value="">Select Friend</option>
   </select>
@@ -29,6 +33,9 @@
   <button onclick="sendMessage()">Send</button>
 </div>
 
-<script src="script.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
