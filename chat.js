@@ -1,91 +1,79 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
+// --- Firebase setup ---
 const firebaseConfig = {
   apiKey: "AIzaSyBz_vN26iOSyYSGpz1BVaz9d85n59zyQVI",
   authDomain: "echat-9080d.firebaseapp.com",
   projectId: "echat-9080d",
   storageBucket: "echat-9080d.firebasestorage.app",
   messagingSenderId: "284036536215",
-  appId: "1:284036536215:web:e1ed69dc03ed470b81d6d2"
+  appId: "1:284036536215:web:e1ed69dc03ed470b81d6d2",
+  measurementId: "G-K3C6F3T89E"
 };
 
-// --- Init Firebase ---
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-// --- DOM ---
-const email = document.getElementById("email");
-const password = document.getElementById("password");
-const signupBtn = document.getElementById("signupBtn");
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const chatApp = document.getElementById("chatApp");
 const authDiv = document.getElementById("auth");
+const appDiv = document.getElementById("app");
 const userDisplay = document.getElementById("userDisplay");
-const chatBox = document.getElementById("chatBox");
 const msgInput = document.getElementById("msgInput");
-const sendBtn = document.getElementById("sendBtn");
+const chatBox = document.getElementById("chatBox");
 
-// --- Auth Logic ---
-signupBtn.onclick = async () => {
-  try {
-    await createUserWithEmailAndPassword(auth, email.value, password.value);
-    alert("Account created. You can log in now.");
-  } catch (err) {
-    alert(err.message);
-  }
-};
+let currentUser = null;
 
-loginBtn.onclick = async () => {
-  try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
-  } catch (err) {
-    alert(err.message);
-  }
-};
+// --- Auth ---
+function signup() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(() => alert("Account created!"))
+    .catch(err => alert(err.message));
+}
 
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-};
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  auth.signInWithEmailAndPassword(email, password)
+    .catch(err => alert(err.message));
+}
 
-onAuthStateChanged(auth, (user) => {
+auth.onAuthStateChanged(user => {
   if (user) {
-    authDiv.style.display = "none";
-    chatApp.style.display = "block";
+    currentUser = user;
     userDisplay.textContent = user.email;
-    loadMessages();
+    authDiv.style.display = "none";
+    appDiv.style.display = "block";
+    listenMessages();
   } else {
-    chatApp.style.display = "none";
+    currentUser = null;
     authDiv.style.display = "block";
+    appDiv.style.display = "none";
   }
 });
 
-// --- Chat Logic ---
-sendBtn.onclick = async () => {
+// --- Messaging ---
+function sendMessage() {
   const text = msgInput.value.trim();
   if (!text) return;
-  await addDoc(collection(db, "messages"), {
+  db.collection("messages").add({
     text,
-    user: auth.currentUser.email,
-    time: new Date()
+    user: currentUser.email,
+    time: firebase.firestore.FieldValue.serverTimestamp()
   });
   msgInput.value = "";
-};
+}
 
-function loadMessages() {
-  const q = query(collection(db, "messages"), orderBy("time"));
-  onSnapshot(q, (snapshot) => {
-    chatBox.innerHTML = "";
-    snapshot.forEach((doc) => {
-      const msg = doc.data();
-      const div = document.createElement("div");
-      div.className = "message" + (msg.user === auth.currentUser.email ? " me" : "");
-      div.textContent = `${msg.user}: ${msg.text}`;
-      chatBox.appendChild(div);
+function listenMessages() {
+  db.collection("messages").orderBy("time")
+    .onSnapshot(snapshot => {
+      chatBox.innerHTML = "";
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const div = document.createElement("div");
+        div.className = "chat-message " + (msg.user === currentUser.email ? "me" : "friend");
+        div.textContent = `${msg.user.split("@")[0]}: ${msg.text}`;
+        chatBox.appendChild(div);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
     });
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
 }
