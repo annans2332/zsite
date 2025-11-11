@@ -1,41 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase Chat</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EChat — Firebase</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Firebase Chat App</h2>
+  <div id="auth">
+    <h2>Login / Sign Up</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="signupBtn">Sign Up</button>
+    <button id="loginBtn">Login</button>
+  </div>
 
-<div id="auth">
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="signup()">Sign Up</button>
-  <button onclick="login()">Login</button>
-</div>
+  <div id="chatApp" style="display:none;">
+    <h3>Welcome <span id="userDisplay"></span></h3>
+    <button id="logoutBtn">Logout</button>
 
-<div id="app" style="display:none;">
-  <h3>Welcome <span id="userDisplay"></span></h3>
-  
-  <input type="email" id="friendEmail" placeholder="Friend's Email">
-  <button onclick="sendFriendRequest()">Send Friend Request</button>
+    <div id="chatBox"></div>
 
-  <h4>Friends:</h4>
-  <select id="friendsList" onchange="selectFriend()">
-    <option value="">Select Friend</option>
-  </select>
+    <textarea id="msgInput" placeholder="Type a message..."></textarea>
+    <button id="sendBtn">Send</button>
+  </div>
 
-  <div id="chatBox"></div>
-  <textarea id="msgInput" placeholder="Type a message"></textarea>
-  <button onclick="sendMessage()">Send</button>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore-compat.js"></script>
-<script src="chat.js"></script>
+  <script type="module" src="chat.js"></script>
 </body>
 </html>
