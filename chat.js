@@ -1,111 +1,77 @@
-// Replace with your Firebase config
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
-};
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+  // --- Your Firebase Config ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBz_vN26iOSyYSGpz1BVaz9d85n59zyQVI",
+    authDomain: "echat-9080d.firebaseapp.com",
+    projectId: "echat-9080d",
+    storageBucket: "echat-9080d.firebasestorage.app",
+    messagingSenderId: "284036536215",
+    appId: "1:284036536215:web:e1ed69dc03ed470b81d6d2",
+    measurementId: "G-K3C6F3T89E"
+  };
 
-let currentUser = null;
-let currentFriend = null;
+  // --- Initialize ---
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-function signup(){
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  auth.createUserWithEmailAndPassword(email,password)
-    .then(res=>{
-      currentUser = res.user;
-      db.collection('users').doc(currentUser.uid).set({email, friends: []});
-      showApp();
-    })
-    .catch(err=>alert(err.message));
-}
+  // --- DOM Elements ---
+  const loginForm = document.getElementById("loginForm");
+  const chatBox = document.getElementById("chatBox");
+  const messageInput = document.getElementById("messageInput");
+  const messagesDiv = document.getElementById("messages");
 
-function login(){
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  auth.signInWithEmailAndPassword(email,password)
-    .then(res=>{
-      currentUser = res.user;
-      showApp();
-    })
-    .catch(err=>alert(err.message));
-}
-
-function showApp(){
-  document.getElementById('auth').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('userDisplay').innerText = currentUser.email;
-  loadFriends();
-}
-
-function sendFriendRequest(){
-  const friendEmail = document.getElementById('friendEmail').value;
-  db.collection('users').where('email','==',friendEmail).get()
-    .then(snapshot=>{
-      snapshot.forEach(doc=>{
-        const friendId = doc.id;
-        // Add to current user's friends list directly for simplicity
-        db.collection('users').doc(currentUser.uid).update({friends: firebase.firestore.FieldValue.arrayUnion(friendId)});
-        db.collection('users').doc(friendId).update({friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)});
-      });
-    });
-}
-
-function loadFriends(){
-  db.collection('users').doc(currentUser.uid)
-    .onSnapshot(doc=>{
-      const friends = doc.data().friends;
-      const select = document.getElementById('friendsList');
-      select.innerHTML='<option value="">Select Friend</option>';
-      friends.forEach(f=>{
-        db.collection('users').doc(f).get().then(friendDoc=>{
-          const opt = document.createElement('option');
-          opt.value = f;
-          opt.text = friendDoc.data().email;
-          select.appendChild(opt);
-        });
-      });
-    });
-}
-
-function selectFriend(){
-  currentFriend = document.getElementById('friendsList').value;
-  loadMessages();
-}
-
-function sendMessage(){
-  const msg = document.getElementById('msgInput').value.trim();
-  if(!msg || !currentFriend) return;
-  const chatId = [currentUser.uid,currentFriend].sort().join('_');
-  db.collection('messages').doc(chatId).collection('chat').add({
-    from: currentUser.uid,
-    msg,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  // --- Auth ---
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch {
+      await createUserWithEmailAndPassword(auth, email, password);
+    }
   });
-  document.getElementById('msgInput').value='';
-}
 
-function loadMessages(){
-  const chatId = [currentUser.uid,currentFriend].sort().join('_');
-  db.collection('messages').doc(chatId).collection('chat')
-    .orderBy('timestamp')
-    .onSnapshot(snapshot=>{
-      const chatBox = document.getElementById('chatBox');
-      chatBox.innerHTML='';
-      snapshot.forEach(doc=>{
-        const m = doc.data();
-        const div = document.createElement('div');
-        div.className = 'chat-message ' + (m.from===currentUser.uid?'me':'friend');
-        div.innerText = m.msg;
-        chatBox.appendChild(div);
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginForm.style.display = "none";
+      chatBox.style.display = "block";
+      loadMessages();
+    } else {
+      chatBox.style.display = "none";
+      loginForm.style.display = "block";
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  // --- Chat Logic ---
+  document.getElementById("sendBtn").addEventListener("click", async () => {
+    const text = messageInput.value.trim();
+    if (!text) return;
+    await addDoc(collection(db, "messages"), {
+      text,
+      user: auth.currentUser.email,
+      timestamp: Date.now()
     });
-}
+    messageInput.value = "";
+  });
+
+  function loadMessages() {
+    const q = query(collection(db, "messages"), orderBy("timestamp"));
+    onSnapshot(q, (snapshot) => {
+      messagesDiv.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const msg = doc.data();
+        const div = document.createElement("div");
+        div.textContent = `${msg.user}: ${msg.text}`;
+        messagesDiv.appendChild(div);
+      });
+    });
+  }
+</script>
